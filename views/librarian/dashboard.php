@@ -103,13 +103,13 @@ $pageTitle = 'Librarian Dashboard';
           <p class="page-breadcrumb">Manage daily library operations and book transactions</p>
         </div>
         <div class="d-flex gap-2">
-          <a href="<?= BASE_URL ?>/views/librarian/transactions/issue.php" class="btn btn-primary">
+          <a href="<?= BASE_URL ?>/views/admin/transactions/issue.php" class="btn btn-primary">
             <i class="fas fa-plus"></i> Issue Book
           </a>
-          <a href="<?= BASE_URL ?>/views/librarian/transactions/return.php" class="btn btn-secondary">
+          <a href="<?= BASE_URL ?>/views/admin/transactions/return.php" class="btn btn-secondary">
             <i class="fas fa-undo"></i> Return Book
           </a>
-          <a href="<?= BASE_URL ?>/views/librarian/books/create.php" class="btn btn-success">
+          <a href="<?= BASE_URL ?>/views/admin/books/create.php" class="btn btn-success">
             <i class="fas fa-book-medical"></i> Add Book
           </a>
         </div>
@@ -173,7 +173,7 @@ $pageTitle = 'Librarian Dashboard';
         <div class="card">
           <div class="card-header">
             <span><i class="fas fa-arrow-right" style="color:var(--success);margin-right:8px;"></i>Today's Issues</span>
-            <a href="<?= BASE_URL ?>/views/librarian/transactions/index.php" class="btn btn-sm btn-secondary">View All</a>
+            <a href="<?= BASE_URL ?>/views/admin/transactions/index.php" class="btn btn-sm btn-secondary">View All</a>
           </div>
           <div class="table-wrapper" style="border:none;border-radius:0;max-height:300px;overflow-y:auto;">
             <table>
@@ -206,7 +206,7 @@ $pageTitle = 'Librarian Dashboard';
         <div class="card">
           <div class="card-header">
             <span><i class="fas fa-arrow-left" style="color:var(--info);margin-right:8px;"></i>Today's Returns</span>
-            <a href="<?= BASE_URL ?>/views/librarian/transactions/index.php?status=returned" class="btn btn-sm btn-secondary">View All</a>
+            <a href="<?= BASE_URL ?>/views/admin/transactions/index.php?status=returned" class="btn btn-sm btn-secondary">View All</a>
           </div>
           <div class="table-wrapper" style="border:none;border-radius:0;max-height:300px;overflow-y:auto;">
             <table>
@@ -248,7 +248,7 @@ $pageTitle = 'Librarian Dashboard';
         <div class="card">
           <div class="card-header">
             <span><i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:8px;"></i>Overdue Books</span>
-            <a href="<?= BASE_URL ?>/views/librarian/transactions/overdue.php" class="btn btn-sm btn-danger">View All</a>
+            <a href="<?= BASE_URL ?>/views/admin/transactions/overdue.php" class="btn btn-sm btn-danger">View All</a>
           </div>
           <div class="table-wrapper" style="border:none;border-radius:0;max-height:320px;overflow-y:auto;">
             <table>
@@ -283,7 +283,7 @@ $pageTitle = 'Librarian Dashboard';
         <div class="card">
           <div class="card-header">
             <span><i class="fas fa-bookmark" style="color:var(--warning);margin-right:8px;"></i>Pending Reservations</span>
-            <a href="<?= BASE_URL ?>/views/librarian/reservations/index.php" class="btn btn-sm btn-warning">Manage</a>
+            <a href="<?= BASE_URL ?>/views/admin/reservations/index.php" class="btn btn-sm btn-warning">Manage</a>
           </div>
           <div class="table-wrapper" style="border:none;border-radius:0;max-height:320px;overflow-y:auto;">
             <table>
@@ -318,7 +318,7 @@ $pageTitle = 'Librarian Dashboard';
       <div class="card" style="margin-top:20px;">
         <div class="card-header">
           <span><i class="fas fa-exclamation-circle" style="color:var(--warning);margin-right:8px;"></i>Low Stock Alert</span>
-          <a href="<?= BASE_URL ?>/views/librarian/books/index.php?filter=low_stock" class="btn btn-sm btn-warning">View All</a>
+          <a href="<?= BASE_URL ?>/views/admin/books/index.php?filter=low_stock" class="btn btn-sm btn-warning">View All</a>
         </div>
         <div class="card-body">
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">

@@ -104,13 +104,13 @@ $pageTitle = 'Assistant Dashboard';
           <p class="page-breadcrumb">Welcome, <?= e(currentUser()['full_name']) ?>! Ready to help our members?</p>
         </div>
         <div class="d-flex gap-2">
-          <a href="<?= BASE_URL ?>/views/assistant/transactions/issue.php" class="btn btn-primary">
+          <a href="<?= BASE_URL ?>/views/admin/transactions/issue.php" class="btn btn-primary">
             <i class="fas fa-plus"></i> Issue Book
           </a>
-          <a href="<?= BASE_URL ?>/views/assistant/transactions/return.php" class="btn btn-secondary">
+          <a href="<?= BASE_URL ?>/views/admin/transactions/return.php" class="btn btn-secondary">
             <i class="fas fa-undo"></i> Return Book
           </a>
-          <a href="<?= BASE_URL ?>/views/assistant/books/index.php" class="btn btn-info">
+          <a href="<?= BASE_URL ?>/views/admin/books/index.php" class="btn btn-info">
             <i class="fas fa-search"></i> Search Books
           </a>
         </div>
@@ -167,28 +167,28 @@ $pageTitle = 'Assistant Dashboard';
         </div>
         <div class="card-body">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px;">
-            <a href="<?= BASE_URL ?>/views/assistant/transactions/issue.php" class="quick-action-card">
+            <a href="<?= BASE_URL ?>/views/admin/transactions/issue.php" class="quick-action-card">
               <div class="quick-action-icon blue"><i class="fas fa-arrow-right"></i></div>
               <div>
                 <div class="quick-action-title">Issue a Book</div>
                 <div class="quick-action-desc">Check out books to members</div>
               </div>
             </a>
-            <a href="<?= BASE_URL ?>/views/assistant/transactions/return.php" class="quick-action-card">
+            <a href="<?= BASE_URL ?>/views/admin/transactions/return.php" class="quick-action-card">
               <div class="quick-action-icon green"><i class="fas fa-arrow-left"></i></div>
               <div>
                 <div class="quick-action-title">Return a Book</div>
                 <div class="quick-action-desc">Process book returns</div>
               </div>
             </a>
-            <a href="<?= BASE_URL ?>/views/assistant/books/create.php" class="quick-action-card">
+            <a href="<?= BASE_URL ?>/views/admin/books/create.php" class="quick-action-card">
               <div class="quick-action-icon purple"><i class="fas fa-plus"></i></div>
               <div>
                 <div class="quick-action-title">Add New Book</div>
                 <div class="quick-action-desc">Add books to collection</div>
               </div>
             </a>
-            <a href="<?= BASE_URL ?>/views/assistant/members/index.php" class="quick-action-card">
+            <a href="<?= BASE_URL ?>/views/admin/members/index.php" class="quick-action-card">
               <div class="quick-action-icon orange"><i class="fas fa-users"></i></div>
               <div>
                 <div class="quick-action-title">Find Members</div>

@@ -36,7 +36,8 @@ class MemberModel {
 
     public function findById(int $id): ?array {
         $stmt = $this->db->prepare(
-            "SELECT m.*, u.full_name, u.email, u.phone, u.photo, u.gender, u.address, u.department
+            "SELECT m.*, u.full_name, u.email, u.phone, u.photo, u.gender, u.address, u.department,
+                    u.status AS user_status
              FROM members m JOIN users u ON m.user_id = u.id WHERE m.id = ? LIMIT 1"
         );
         $stmt->execute([$id]);
@@ -96,5 +97,9 @@ class MemberModel {
 
     public function countActive(): int {
         return (int)$this->db->query("SELECT COUNT(*) FROM members WHERE status='active'")->fetchColumn();
+    }
+
+    public function countNewToday(): int {
+        return (int)$this->db->query("SELECT COUNT(*) FROM members WHERE DATE(created_at)=CURDATE()")->fetchColumn();
     }
 }
