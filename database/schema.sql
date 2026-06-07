@@ -109,9 +109,9 @@ CREATE TABLE `users` (
   FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Default Super Admin (password: Admin@1234)
+-- Default Super Admin — password: Admin@1234
 INSERT INTO `users` (`role_id`,`username`,`email`,`password`,`full_name`,`status`,`email_verified`) VALUES
-(1,'superadmin','admin@library.com','$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi','Super Admin','active',1);
+(1,'superadmin','admin@library.com','$2y$12$eAZ2uqdZqipnWZBuiIpCzu3Y248AbsFU6kDyfxygdGpl3gOBYU5P','Super Admin','active',1);
 
 -- ============================================================
 -- TABLE: login_history
