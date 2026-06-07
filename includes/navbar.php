@@ -83,10 +83,10 @@ $notifications = $notifListStmt->fetchAll();
         <i class="fas fa-chevron-down" style="font-size:.7rem;color:var(--text-muted);margin-left:4px;"></i>
       </div>
       <div class="dropdown-menu" id="userDropdown">
-        <a class="dropdown-item" href="<?= BASE_URL ?>/views/admin/profile.php">
+        <a class="dropdown-item" href="<?= BASE_URL ?>/views/<?= in_array($_SESSION['user']['role_slug'] ?? '', ['member']) ? 'member' : 'admin' ?>/profile.php">
           <i class="fas fa-user"></i> My Profile
         </a>
-        <a class="dropdown-item" href="<?= BASE_URL ?>/views/admin/profile.php?tab=password">
+        <a class="dropdown-item" href="<?= BASE_URL ?>/views/<?= in_array($_SESSION['user']['role_slug'] ?? '', ['member']) ? 'member' : 'admin' ?>/profile.php?tab=password">
           <i class="fas fa-lock"></i> Change Password
         </a>
         <div class="dropdown-divider"></div>

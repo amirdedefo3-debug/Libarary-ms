@@ -6,7 +6,7 @@
     </div>
     <div>
       <h1><?= e(getSetting('site_name','Library MS')) ?></h1>
-      <span>Management System</span>
+      <span><?= hasRole('super_admin') ? 'Super Admin Panel' : 'Management System' ?></span>
     </div>
   </div>
 
