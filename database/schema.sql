@@ -109,9 +109,22 @@ CREATE TABLE `users` (
   FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Default Super Admin — password: Admin@1234
+-- ============================================================
+-- Demo Users — one per role
+-- Super Admin  → admin@library.com      / Admin@1234
+-- Librarian    → librarian@library.com  / Librarian@123
+-- Assistant    → assistant@library.com  / Assistant@123
+-- Member       → member@library.com     / Member@123
+-- ============================================================
 INSERT INTO `users` (`role_id`,`username`,`email`,`password`,`full_name`,`status`,`email_verified`) VALUES
-(1,'superadmin','admin@library.com','$2y$12$eAZ2uqdZqipnWZBuiIpCzu3Y248AbsFU6kDyfxygdGpl3gOBYU5P','Super Admin','active',1);
+(1,'superadmin','admin@library.com',       '$2y$12$eAZ2uqdZqipnWZBuiIpCzu3Y248AbsFU6kDyfxygdGpl3gOBYU5P','Super Admin',    'active',1),
+(2,'librarian1','librarian@library.com',   '$2y$12$UeMNOiwDZo9uEn2Xy27LHe0F.dgZbSxww5B7gwH6JvlHbp5Rx5rYC','John Librarian', 'active',1),
+(3,'assistant1','assistant@library.com',   '$2y$12$GfSxhkyTGGBecjmT1iug3ONtrYMEJ6iu2lvmSQJpMYN.YmA2rvMMy','Jane Assistant',  'active',1),
+(4,'member1',   'member@library.com',      '$2y$12$6s0KovGLvWL7W/81m7OUyeyTKFn03cRUZoRPEPNfK0PojqXSW9JJ6','Alice Member',    'active',1);
+
+-- Member record for the demo member user (user id 4)
+INSERT INTO `members` (`user_id`,`member_id`,`membership_date`,`expiry_date`,`max_borrow_limit`,`status`) VALUES
+(4,'MEM20260001',CURDATE(),DATE_ADD(CURDATE(), INTERVAL 1 YEAR),5,'active');
 
 -- ============================================================
 -- TABLE: login_history
