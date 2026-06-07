@@ -1,0 +1,40 @@
+# Library Management System — Security Configuration
+
+# Prevent directory listing
+Options -Indexes
+
+# Prevent access to sensitive files
+<FilesMatch "\.(env|sql|log|bak|sh|git)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Protect config and model directories
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block direct access to PHP files in config/models directories
+    RewriteRule ^config/.*\.php$ - [F,L]
+    RewriteRule ^models/.*\.php$ - [F,L]
+
+    # Optional: Front controller
+    # RewriteCond %{REQUEST_FILENAME} !-f
+    # RewriteCond %{REQUEST_FILENAME} !-d
+    # RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+</IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# PHP settings
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+</IfModule>
