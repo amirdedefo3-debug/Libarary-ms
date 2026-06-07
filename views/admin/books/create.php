@@ -1,14 +1,20 @@
 <?php
-require_once __DIR__ . '/../../../config/config.php';
-require_once __DIR__ . '/../../../includes/middleware.php';
-require_once __DIR__ . '/../../../controllers/BookController.php';
-$ctrl = new BookController();
-$ctrl->create();
+/**
+ * Add Book View — included by BookController::create()
+ * Variables: $error, $categories, $authors, $publishers
+ */
+if (!defined('BASE_PATH')) {
+    require_once __DIR__ . '/../../../config/config.php';
+    require_once __DIR__ . '/../../../includes/middleware.php';
+    require_once __DIR__ . '/../../../controllers/BookController.php';
+    (new BookController())->create();
+    exit;
+}
 $pageTitle = 'Add Book';
 ?>
-<?php include __DIR__ . '/../../../includes/header.php'; ?>
+<?php include BASE_PATH . '/includes/header.php'; ?>
 <div class="wrapper">
-  <?php include __DIR__ . '/../../../includes/sidebar.php'; ?>
+  <?php include BASE_PATH . '/includes/sidebar.php'; ?>
   <div class="main-content">
     <?php include __DIR__ . '/../../../includes/navbar.php'; ?>
     <div class="page-content">
@@ -156,4 +162,4 @@ $pageTitle = 'Add Book';
     </div>
   </div>
 </div>
-<?php include __DIR__ . '/../../../includes/footer.php'; ?>
+<?php include BASE_PATH . '/includes/footer.php'; ?>

@@ -1,17 +1,20 @@
 <?php
-require_once __DIR__ . '/../../../config/config.php';
-require_once __DIR__ . '/../../../includes/middleware.php';
-require_once __DIR__ . '/../../../controllers/BookController.php';
-$ctrl = new BookController();
-$ctrl->index();
-// Controller calls include on this file — we stop here and let the controller render:
-// Actually for simplicity the controller includes this view directly.
-// The view receives: $books, $pagination, $categories, $filters
+/**
+ * Books List View — included by BookController::index()
+ * Variables: $books (array), $pagination (array), $categories (array), $filters (array)
+ */
+if (!defined('BASE_PATH')) {
+    require_once __DIR__ . '/../../../config/config.php';
+    require_once __DIR__ . '/../../../includes/middleware.php';
+    require_once __DIR__ . '/../../../controllers/BookController.php';
+    (new BookController())->index();
+    exit;
+}
 $pageTitle = 'Books';
 ?>
-<?php include __DIR__ . '/../../../includes/header.php'; ?>
+<?php include BASE_PATH . '/includes/header.php'; ?>
 <div class="wrapper">
-  <?php include __DIR__ . '/../../../includes/sidebar_admin.php'; ?>
+  <?php include BASE_PATH . '/includes/sidebar.php'; ?>
   <div class="main-content">
     <?php include __DIR__ . '/../../../includes/navbar.php'; ?>
     <div class="page-content">
@@ -159,4 +162,4 @@ $pageTitle = 'Books';
     </div>
   </div>
 </div>
-<?php include __DIR__ . '/../../../includes/footer.php'; ?>
+<?php include BASE_PATH . '/includes/footer.php'; ?>
