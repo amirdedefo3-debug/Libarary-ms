@@ -1,27 +1,22 @@
 <?php
-$user = currentUser();
-// Count unread notifications for badge
-$db = Database::getInstance();
-$nStmt = $db->prepare("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0");
-$nStmt->execute([$_SESSION['user_id']]);
-$unreadNotif = (int)$nStmt->fetchColumn();
+$user   = currentUser();
+$db     = Database::getInstance();
+$uid    = (int)($_SESSION['user_id'] ?? 0);
+$mid    = (int)(($_SESSION['member']['id'] ?? 0));
 
-// Count active borrows for badge
-$member = $_SESSION['member'] ?? null;
-$activeBorrowCount = 0;
-if ($member) {
-    $bStmt = $db->prepare("SELECT COUNT(*) FROM borrow_transactions WHERE member_id=? AND status='borrowed'");
-    $bStmt->execute([$member['id']]);
-    $activeBorrowCount = (int)$bStmt->fetchColumn();
-}
+// ONE combined query for all badge counts
+$badgeStmt = $db->prepare(
+    "SELECT
+       (SELECT COUNT(*) FROM notifications        WHERE user_id=:uid AND is_read=0)         AS notif,
+       (SELECT COUNT(*) FROM borrow_transactions  WHERE member_id=:mid AND status='borrowed') AS borrows,
+       (SELECT COUNT(*) FROM fines                WHERE member_id=:mid AND status='pending')  AS fines"
+);
+$badgeStmt->execute([':uid' => $uid, ':mid' => $mid]);
+$badges = $badgeStmt->fetch();
 
-// Count pending fines
-$pendingFineCount = 0;
-if ($member) {
-    $fStmt = $db->prepare("SELECT COUNT(*) FROM fines WHERE member_id=? AND status='pending'");
-    $fStmt->execute([$member['id']]);
-    $pendingFineCount = (int)$fStmt->fetchColumn();
-}
+$unreadNotif      = (int)($badges['notif']   ?? 0);
+$activeBorrowCount = (int)($badges['borrows'] ?? 0);
+$pendingFineCount  = (int)($badges['fines']   ?? 0);
 ?>
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-brand">
