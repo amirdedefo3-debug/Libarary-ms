@@ -17,6 +17,7 @@ $badges = $badgeStmt->fetch();
 $unreadNotif      = (int)($badges['notif']   ?? 0);
 $activeBorrowCount = (int)($badges['borrows'] ?? 0);
 $pendingFineCount  = (int)($badges['fines']   ?? 0);
+$cp = $_SERVER['PHP_SELF'] ?? '';
 ?>
 <nav class="sidebar" id="sidebar">
   <div class="sidebar-brand">
@@ -32,19 +33,19 @@ $pendingFineCount  = (int)($badges['fines']   ?? 0);
   <div class="sidebar-nav">
     <p class="nav-section-title">My Space</p>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/dashboard.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/dashboard.php" class="nav-link <?= strpos($cp,'member/dashboard') !== false ? 'active':'' ?>">
         <i class="fas fa-home"></i> Dashboard
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/search.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/search.php" class="nav-link <?= strpos($cp,'member/search') !== false ? 'active':'' ?>">
         <i class="fas fa-search"></i> Search Books
       </a>
     </div>
 
     <p class="nav-section-title">My Library</p>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/borrows.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/borrows.php" class="nav-link <?= strpos($cp,'member/borrows') !== false ? 'active':'' ?>">
         <i class="fas fa-book-open"></i> My Borrows
         <?php if ($activeBorrowCount > 0): ?>
           <span class="nav-badge"><?= $activeBorrowCount ?></span>
@@ -52,12 +53,12 @@ $pendingFineCount  = (int)($badges['fines']   ?? 0);
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/reservations.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/reservations.php" class="nav-link <?= strpos($cp,'member/reservations') !== false ? 'active':'' ?>">
         <i class="fas fa-bookmark"></i> My Reservations
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/fines.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/fines.php" class="nav-link <?= strpos($cp,'member/fines') !== false ? 'active':'' ?>">
         <i class="fas fa-money-bill-wave"></i> My Fines
         <?php if ($pendingFineCount > 0): ?>
           <span class="nav-badge"><?= $pendingFineCount ?></span>
@@ -65,7 +66,7 @@ $pendingFineCount  = (int)($badges['fines']   ?? 0);
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/notifications.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/notifications.php" class="nav-link <?= strpos($cp,'member/notifications') !== false ? 'active':'' ?>">
         <i class="fas fa-bell"></i> Notifications
         <?php if ($unreadNotif > 0): ?>
           <span class="nav-badge"><?= $unreadNotif ?></span>
@@ -75,12 +76,12 @@ $pendingFineCount  = (int)($badges['fines']   ?? 0);
 
     <p class="nav-section-title">Account</p>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/profile.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/profile.php" class="nav-link <?= strpos($cp,'member/profile') !== false ? 'active':'' ?>">
         <i class="fas fa-user-circle"></i> My Profile
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/member/membership_card.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/member/membership_card.php" class="nav-link <?= strpos($cp,'membership_card') !== false ? 'active':'' ?>">
         <i class="fas fa-id-card"></i> Membership Card
       </a>
     </div>

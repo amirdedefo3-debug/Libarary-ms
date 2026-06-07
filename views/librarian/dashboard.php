@@ -14,83 +14,70 @@ $memberModel      = new MemberModel();
 $txModel          = new TransactionModel();
 $fineModel        = new FineModel();
 $reservationModel = new ReservationModel();
-$db               = Database::getInstance();
 
-// ── Stats ──────────────────────────────────────────────────
-$totalBooks      = $bookModel->count();
-$availableBooks  = $bookModel->countAvailable();
-$issuedBooks     = $txModel->countByStatus('borrowed');
-$returnedToday   = $txModel->countTodayReturned();
-$borrowedToday   = $txModel->countTodayIssued();
-$overdueCount    = (int)$db->query("SELECT COUNT(*) FROM borrow_transactions WHERE status='borrowed' AND due_date < CURDATE()")->fetchColumn();
-$reservedCount   = $reservationModel->countByStatus('pending');
-$activeMembers   = $memberModel->countActive();
-$newMembersMonth = (int)$db->query("SELECT COUNT(*) FROM members WHERE MONTH(created_at)=MONTH(CURDATE()) AND YEAR(created_at)=YEAR(CURDATE())")->fetchColumn();
-$fineCollected   = $fineModel->totalCollected();
-$finePending     = $fineModel->totalPending();
+$db = Database::getInstance();
 
-// ── Charts ─────────────────────────────────────────────────
-// Weekly borrow/return (last 7 days)
-$weeklyData = $db->query(
-    "SELECT DATE(issue_date) AS day, COUNT(*) AS borrows
-     FROM borrow_transactions
-     WHERE issue_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY)
-     GROUP BY day ORDER BY day"
-)->fetchAll();
-$weeklyReturns = $db->query(
-    "SELECT DATE(return_date) AS day, COUNT(*) AS returns
-     FROM borrow_transactions
-     WHERE return_date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) AND return_date IS NOT NULL
-     GROUP BY day ORDER BY day"
-)->fetchAll();
+// Librarian-focused stats
+$totalBooks       = $bookModel->count();
+$availableBooks   = $bookModel->countAvailable();
+$issuedBooks      = $txModel->countByStatus('borrowed');
+$returnedToday    = $txModel->countTodayReturned();
+$overdueBooks     = $txModel->countByStatus('overdue') + (int)$db->query("SELECT COUNT(*) FROM borrow_transactions WHERE status='borrowed' AND due_date < CURDATE()")->fetchColumn();
+$reservedBooks    = $reservationModel->countByStatus('pending');
+$totalMembers     = $memberModel->count();
+$newMembersToday  = $memberModel->countNewToday();
 
-// Build 7-day label array
-$days = [];
-$borrowsByDay  = [];
-$returnsByDay  = [];
-for ($i = 6; $i >= 0; $i--) {
-    $d = date('Y-m-d', strtotime("-$i days"));
-    $days[] = date('D d', strtotime($d));
-    $borrowsByDay[$d]  = 0;
-    $returnsByDay[$d]  = 0;
-}
-foreach ($weeklyData    as $r) $borrowsByDay[$r['day']]  = (int)$r['borrows'];
-foreach ($weeklyReturns as $r) $returnsByDay[$r['day']] = (int)$r['returns'];
-
-// ── Recent transactions ────────────────────────────────────
-$recentTx = $db->query(
-    "SELECT bt.id, bt.issue_number, bt.issue_date, bt.due_date, bt.status,
-            b.title AS book_title, b.cover_image,
-            u.full_name AS member_name, m.member_id AS member_code
+// Today's activity
+$todayIssued = $db->query(
+    "SELECT bt.issue_number, b.title, u.full_name, bt.due_date
      FROM borrow_transactions bt
-     JOIN books b    ON bt.book_id   = b.id
-     JOIN members m  ON bt.member_id = m.id
-     JOIN users u    ON m.user_id    = u.id
-     ORDER BY bt.created_at DESC LIMIT 8"
+     JOIN books b ON bt.book_id=b.id
+     JOIN members m ON bt.member_id=m.id
+     JOIN users u ON m.user_id=u.id
+     WHERE DATE(bt.created_at) = CURDATE()
+     ORDER BY bt.created_at DESC LIMIT 10"
 )->fetchAll();
 
-// ── Overdue list (top 5) ───────────────────────────────────
+$todayReturned = $db->query(
+    "SELECT rt.return_date, b.title, u.full_name, rt.fine_amount
+     FROM return_transactions rt
+     JOIN borrow_transactions bt ON rt.borrow_id=bt.id
+     JOIN books b ON bt.book_id=b.id
+     JOIN members m ON bt.member_id=m.id
+     JOIN users u ON m.user_id=u.id
+     WHERE DATE(rt.return_date) = CURDATE()
+     ORDER BY rt.created_at DESC LIMIT 10"
+)->fetchAll();
+
+// Overdue books requiring attention
 $overdueList = $db->query(
-    "SELECT bt.issue_number, bt.due_date, b.title AS book_title, u.full_name AS member_name,
-            DATEDIFF(CURDATE(), bt.due_date) AS days_over
+    "SELECT bt.issue_number, b.title, u.full_name, bt.due_date, 
+            DATEDIFF(CURDATE(), bt.due_date) AS days_overdue
      FROM borrow_transactions bt
-     JOIN books b   ON bt.book_id   = b.id
-     JOIN members m ON bt.member_id = m.id
-     JOIN users u   ON m.user_id    = u.id
-     WHERE bt.status='borrowed' AND bt.due_date < CURDATE()
-     ORDER BY bt.due_date ASC LIMIT 5"
+     JOIN books b ON bt.book_id=b.id
+     JOIN members m ON bt.member_id=m.id
+     JOIN users u ON m.user_id=u.id
+     WHERE (bt.status='borrowed' AND bt.due_date < CURDATE()) OR bt.status='overdue'
+     ORDER BY days_overdue DESC LIMIT 10"
 )->fetchAll();
 
-// ── Pending reservations (top 5) ──────────────────────────
-$pendingRes = $db->query(
-    "SELECT r.id, r.reservation_number, r.reserved_date, b.title AS book_title,
-            u.full_name AS member_name
+// Pending reservations
+$pendingReservations = $db->query(
+    "SELECT r.reservation_number, b.title, u.full_name, r.reserved_date
      FROM reservations r
-     JOIN books b   ON r.book_id    = b.id
-     JOIN members m ON r.member_id  = m.id
-     JOIN users u   ON m.user_id    = u.id
-     WHERE r.status = 'pending'
-     ORDER BY r.created_at ASC LIMIT 5"
+     JOIN books b ON r.book_id=b.id
+     JOIN members m ON r.member_id=m.id
+     JOIN users u ON m.user_id=u.id
+     WHERE r.status='pending'
+     ORDER BY r.reserved_date ASC LIMIT 8"
+)->fetchAll();
+
+// Low stock books
+$lowStockBooks = $db->query(
+    "SELECT title, available_quantity, quantity
+     FROM books 
+     WHERE available_quantity <= 1 AND status='available'
+     ORDER BY available_quantity ASC LIMIT 8"
 )->fetchAll();
 
 $pageTitle = 'Librarian Dashboard';
@@ -104,7 +91,7 @@ $pageTitle = 'Librarian Dashboard';
 
     <div class="page-content">
       <?php $flash = getFlash(); if ($flash): ?>
-        <div class="alert alert-<?= $flash['type']==='success'?'success':'danger' ?>" data-auto-dismiss>
+        <div class="alert alert-<?= $flash['type'] === 'success' ? 'success' : 'danger' ?>" data-auto-dismiss>
           <?= e($flash['message']) ?>
         </div>
       <?php endif; ?>
@@ -113,196 +100,180 @@ $pageTitle = 'Librarian Dashboard';
       <div class="page-header">
         <div>
           <h1 class="page-title">Librarian Dashboard</h1>
-          <p class="page-breadcrumb">
-            Good <?= date('H') < 12 ? 'Morning' : (date('H') < 17 ? 'Afternoon' : 'Evening') ?>,
-            <strong><?= e(currentUser()['full_name']) ?></strong>!
-            &nbsp;·&nbsp; <?= date('l, d F Y') ?>
-          </p>
+          <p class="page-breadcrumb">Manage daily library operations and book transactions</p>
         </div>
         <div class="d-flex gap-2">
-          <a href="<?= BASE_URL ?>/views/admin/transactions/issue.php" class="btn btn-primary">
-            <i class="fas fa-arrow-circle-right"></i> Issue Book
+          <a href="<?= BASE_URL ?>/views/librarian/transactions/issue.php" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Issue Book
           </a>
-          <a href="<?= BASE_URL ?>/views/admin/transactions/return.php" class="btn btn-success">
-            <i class="fas fa-arrow-circle-left"></i> Return Book
+          <a href="<?= BASE_URL ?>/views/librarian/transactions/return.php" class="btn btn-secondary">
+            <i class="fas fa-undo"></i> Return Book
+          </a>
+          <a href="<?= BASE_URL ?>/views/librarian/books/create.php" class="btn btn-success">
+            <i class="fas fa-book-medical"></i> Add Book
           </a>
         </div>
       </div>
 
-      <!-- ── Stat Cards ── -->
-      <div class="stats-grid">
+      <!-- Quick Stats -->
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
         <div class="stat-card">
-          <div class="stat-icon blue"><i class="fas fa-book"></i></div>
+          <div class="stat-icon blue"><i class="fas fa-books"></i></div>
           <div class="stat-info">
             <div class="stat-label">Available Books</div>
             <div class="stat-value"><?= number_format($availableBooks) ?></div>
-            <div class="stat-change text-muted"><i class="fas fa-layer-group"></i> <?= number_format($totalBooks) ?> total</div>
+            <div class="stat-change"><i class="fas fa-book-open"></i> of <?= number_format($totalBooks) ?> total</div>
           </div>
         </div>
-
         <div class="stat-card">
-          <div class="stat-icon purple"><i class="fas fa-hand-holding-heart"></i></div>
+          <div class="stat-icon orange"><i class="fas fa-hand-holding"></i></div>
           <div class="stat-info">
             <div class="stat-label">Currently Issued</div>
             <div class="stat-value"><?= number_format($issuedBooks) ?></div>
-            <div class="stat-change up"><i class="fas fa-arrow-up"></i> <?= $borrowedToday ?> today</div>
+            <div class="stat-change"><i class="fas fa-users"></i> Active borrows</div>
           </div>
         </div>
-
         <div class="stat-card">
-          <div class="stat-icon green"><i class="fas fa-undo-alt"></i></div>
+          <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
           <div class="stat-info">
             <div class="stat-label">Returned Today</div>
             <div class="stat-value"><?= number_format($returnedToday) ?></div>
-            <div class="stat-change text-muted"><i class="fas fa-calendar-day"></i> Today only</div>
+            <div class="stat-change up"><i class="fas fa-calendar-day"></i> Today's returns</div>
           </div>
         </div>
-
         <div class="stat-card">
           <div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div>
           <div class="stat-info">
             <div class="stat-label">Overdue Books</div>
-            <div class="stat-value"><?= number_format($overdueCount) ?></div>
-            <div class="stat-change down"><i class="fas fa-clock"></i> Need follow-up</div>
+            <div class="stat-value"><?= number_format($overdueBooks) ?></div>
+            <div class="stat-change down"><i class="fas fa-calendar-times"></i> Need attention</div>
           </div>
         </div>
-
         <div class="stat-card">
-          <div class="stat-icon yellow"><i class="fas fa-bookmark"></i></div>
+          <div class="stat-icon purple"><i class="fas fa-bookmark"></i></div>
           <div class="stat-info">
             <div class="stat-label">Pending Reservations</div>
-            <div class="stat-value"><?= number_format($reservedCount) ?></div>
-            <div class="stat-change text-muted"><i class="fas fa-hourglass-half"></i> Awaiting approval</div>
+            <div class="stat-value"><?= number_format($reservedBooks) ?></div>
+            <div class="stat-change"><i class="fas fa-hourglass-half"></i> Awaiting approval</div>
           </div>
         </div>
-
         <div class="stat-card">
           <div class="stat-icon cyan"><i class="fas fa-users"></i></div>
           <div class="stat-info">
-            <div class="stat-label">Active Members</div>
-            <div class="stat-value"><?= number_format($activeMembers) ?></div>
-            <div class="stat-change up"><i class="fas fa-user-plus"></i> +<?= $newMembersMonth ?> this month</div>
-          </div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon green"><i class="fas fa-coins"></i></div>
-          <div class="stat-info">
-            <div class="stat-label">Fine Collected</div>
-            <div class="stat-value"><?= currency($fineCollected) ?></div>
-            <div class="stat-change down"><i class="fas fa-exclamation-circle"></i> <?= currency($finePending) ?> pending</div>
+            <div class="stat-label">Total Members</div>
+            <div class="stat-value"><?= number_format($totalMembers) ?></div>
+            <div class="stat-change up"><i class="fas fa-user-plus"></i> <?= $newMembersToday ?> new today</div>
           </div>
         </div>
       </div>
 
-      <!-- ── Quick Actions Strip ── -->
-      <div class="card mb-4">
-        <div class="card-body" style="padding:16px 20px;">
-          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-            <span style="font-weight:600;color:var(--text-muted);font-size:.85rem;margin-right:4px;">QUICK ACTIONS</span>
-            <a href="<?= BASE_URL ?>/views/admin/transactions/issue.php" class="btn btn-primary btn-sm">
-              <i class="fas fa-arrow-circle-right"></i> Issue Book
-            </a>
-            <a href="<?= BASE_URL ?>/views/admin/transactions/return.php" class="btn btn-success btn-sm">
-              <i class="fas fa-arrow-circle-left"></i> Return Book
-            </a>
-            <a href="<?= BASE_URL ?>/views/admin/books/create.php" class="btn btn-secondary btn-sm">
-              <i class="fas fa-plus"></i> Add Book
-            </a>
-            <a href="<?= BASE_URL ?>/views/admin/members/create.php" class="btn btn-secondary btn-sm">
-              <i class="fas fa-user-plus"></i> Add Member
-            </a>
-            <a href="<?= BASE_URL ?>/views/admin/transactions/overdue.php" class="btn btn-warning btn-sm">
-              <i class="fas fa-exclamation-triangle"></i> Overdue List
-            </a>
-            <a href="<?= BASE_URL ?>/views/admin/reservations/index.php" class="btn btn-secondary btn-sm">
-              <i class="fas fa-bookmark"></i> Reservations
-            </a>
-            <a href="<?= BASE_URL ?>/views/admin/fines/index.php" class="btn btn-secondary btn-sm">
-              <i class="fas fa-money-bill-wave"></i> Fines
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Weekly Chart + Overdue ── -->
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px;">
-
-        <!-- Weekly Borrow vs Return Chart -->
+      <!-- Main Dashboard Content -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+        <!-- Today's Issues -->
         <div class="card">
           <div class="card-header">
-            <span><i class="fas fa-chart-bar" style="color:var(--primary);margin-right:8px;"></i>Weekly Activity (Last 7 Days)</span>
+            <span><i class="fas fa-arrow-right" style="color:var(--success);margin-right:8px;"></i>Today's Issues</span>
+            <a href="<?= BASE_URL ?>/views/librarian/transactions/index.php" class="btn btn-sm btn-secondary">View All</a>
           </div>
-          <div class="card-body">
-            <div style="height:240px;">
-              <canvas id="weeklyChart"></canvas>
-            </div>
-          </div>
-        </div>
-
-        <!-- Overdue Alert Panel -->
-        <div class="card">
-          <div class="card-header" style="color:var(--danger);">
-            <span><i class="fas fa-exclamation-triangle"></i> Top Overdue</span>
-            <a href="<?= BASE_URL ?>/views/admin/transactions/overdue.php" class="btn btn-sm btn-danger">View All</a>
-          </div>
-          <?php if (empty($overdueList)): ?>
-            <div class="card-body text-center text-muted" style="padding:32px 16px;">
-              <i class="fas fa-check-circle fa-2x" style="color:var(--success);margin-bottom:8px;"></i>
-              <p>No overdue books!</p>
-            </div>
-          <?php else: ?>
-            <div style="overflow:hidden;">
-              <?php foreach ($overdueList as $ov): ?>
-              <div style="display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);">
-                <div style="width:36px;height:36px;border-radius:8px;background:#fee2e2;color:var(--danger);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;font-size:.8rem;">
-                  <?= $ov['days_over'] ?>d
-                </div>
-                <div style="min-width:0;flex:1;">
-                  <div style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= e($ov['book_title']) ?></div>
-                  <div style="font-size:.75rem;color:var(--text-muted);"><?= e($ov['member_name']) ?></div>
-                </div>
-                <a href="<?= BASE_URL ?>/views/admin/transactions/return.php?issue_number=<?= urlencode($ov['issue_number']) ?>"
-                   class="btn btn-sm btn-success" style="flex-shrink:0;padding:4px 8px;">
-                  Return
-                </a>
-              </div>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <!-- ── Recent Transactions + Pending Reservations ── -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-
-        <!-- Recent Transactions -->
-        <div class="card">
-          <div class="card-header">
-            <span><i class="fas fa-exchange-alt" style="color:var(--info);margin-right:8px;"></i>Recent Transactions</span>
-            <a href="<?= BASE_URL ?>/views/admin/transactions/index.php" class="btn btn-sm btn-secondary">View All</a>
-          </div>
-          <div class="table-wrapper" style="border:none;border-radius:0;">
+          <div class="table-wrapper" style="border:none;border-radius:0;max-height:300px;overflow-y:auto;">
             <table>
               <thead>
-                <tr><th>Member</th><th>Book</th><th>Due</th><th>Status</th></tr>
+                <tr>
+                  <th>Issue #</th>
+                  <th>Member</th>
+                  <th>Book</th>
+                  <th>Due Date</th>
+                </tr>
               </thead>
               <tbody>
-                <?php if (empty($recentTx)): ?>
-                  <tr><td colspan="4" class="text-center text-muted" style="padding:24px;">No transactions yet</td></tr>
-                <?php else: foreach ($recentTx as $tx):
-                  $isOv = $tx['status']==='borrowed' && strtotime($tx['due_date']) < time();
-                  $sc   = ['borrowed'=>'badge-info','returned'=>'badge-success','overdue'=>'badge-danger','lost'=>'badge-warning'];
-                  $bc   = $isOv ? 'badge-danger' : ($sc[$tx['status']] ?? 'badge-secondary');
-                  $sl   = $isOv ? 'Overdue' : ucfirst($tx['status']);
-                ?>
-                  <tr>
-                    <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= e($tx['member_name']) ?></td>
-                    <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($tx['book_title']) ?>"><?= e($tx['book_title']) ?></td>
-                    <td style="white-space:nowrap;" class="<?= $isOv?'text-danger fw-bold':'' ?>"><?= formatDate($tx['due_date'],'d M') ?></td>
-                    <td><span class="badge <?= $bc ?>"><?= $sl ?></span></td>
-                  </tr>
-                <?php endforeach; endif; ?>
+                <?php foreach ($todayIssued as $issue): ?>
+                <tr>
+                  <td><span class="badge badge-info"><?= e($issue['issue_number']) ?></span></td>
+                  <td><?= e($issue['full_name']) ?></td>
+                  <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($issue['title']) ?>"><?= e($issue['title']) ?></td>
+                  <td><?= formatDate($issue['due_date']) ?></td>
+                </tr>
+                <?php endforeach; ?>
+                <?php if (empty($todayIssued)): ?>
+                <tr><td colspan="4" class="text-center text-muted" style="padding:24px;">No books issued today</td></tr>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Today's Returns -->
+        <div class="card">
+          <div class="card-header">
+            <span><i class="fas fa-arrow-left" style="color:var(--info);margin-right:8px;"></i>Today's Returns</span>
+            <a href="<?= BASE_URL ?>/views/librarian/transactions/index.php?status=returned" class="btn btn-sm btn-secondary">View All</a>
+          </div>
+          <div class="table-wrapper" style="border:none;border-radius:0;max-height:300px;overflow-y:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Member</th>
+                  <th>Book</th>
+                  <th>Fine</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($todayReturned as $return): ?>
+                <tr>
+                  <td><?= e($return['full_name']) ?></td>
+                  <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($return['title']) ?>"><?= e($return['title']) ?></td>
+                  <td>
+                    <?php if ($return['fine_amount'] > 0): ?>
+                      <span class="badge badge-warning"><?= currency($return['fine_amount']) ?></span>
+                    <?php else: ?>
+                      <span class="text-success">Free</span>
+                    <?php endif; ?>
+                  </td>
+                  <td><?= formatDate($return['return_date']) ?></td>
+                </tr>
+                <?php endforeach; ?>
+                <?php if (empty($todayReturned)): ?>
+                <tr><td colspan="4" class="text-center text-muted" style="padding:24px;">No books returned today</td></tr>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row - Overdue & Reservations -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <!-- Overdue Books -->
+        <div class="card">
+          <div class="card-header">
+            <span><i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:8px;"></i>Overdue Books</span>
+            <a href="<?= BASE_URL ?>/views/librarian/transactions/overdue.php" class="btn btn-sm btn-danger">View All</a>
+          </div>
+          <div class="table-wrapper" style="border:none;border-radius:0;max-height:320px;overflow-y:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Issue #</th>
+                  <th>Member</th>
+                  <th>Book</th>
+                  <th>Days</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($overdueList as $overdue): ?>
+                <tr>
+                  <td><span class="badge badge-danger"><?= e($overdue['issue_number']) ?></span></td>
+                  <td><?= e($overdue['full_name']) ?></td>
+                  <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($overdue['title']) ?>"><?= e($overdue['title']) ?></td>
+                  <td><span class="badge badge-warning">+<?= $overdue['days_overdue'] ?></span></td>
+                </tr>
+                <?php endforeach; ?>
+                <?php if (empty($overdueList)): ?>
+                <tr><td colspan="4" class="text-center text-success" style="padding:24px;">
+                  <i class="fas fa-check-circle"></i> No overdue books!
+                </td></tr>
+                <?php endif; ?>
               </tbody>
             </table>
           </div>
@@ -312,81 +283,58 @@ $pageTitle = 'Librarian Dashboard';
         <div class="card">
           <div class="card-header">
             <span><i class="fas fa-bookmark" style="color:var(--warning);margin-right:8px;"></i>Pending Reservations</span>
-            <a href="<?= BASE_URL ?>/views/admin/reservations/index.php" class="btn btn-sm btn-secondary">Manage</a>
+            <a href="<?= BASE_URL ?>/views/librarian/reservations/index.php" class="btn btn-sm btn-warning">Manage</a>
           </div>
-          <?php if (empty($pendingRes)): ?>
-            <div class="card-body text-center text-muted" style="padding:32px 16px;">
-              <i class="fas fa-bookmark fa-2x" style="color:var(--border);margin-bottom:8px;"></i>
-              <p>No pending reservations</p>
-            </div>
-          <?php else: ?>
-            <div style="overflow:hidden;">
-              <?php foreach ($pendingRes as $res): ?>
-              <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);">
-                <div style="width:36px;height:36px;border-radius:8px;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-                  <i class="fas fa-bookmark"></i>
-                </div>
-                <div style="min-width:0;flex:1;">
-                  <div style="font-size:.82rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><?= e($res['book_title']) ?></div>
-                  <div style="font-size:.75rem;color:var(--text-muted);"><?= e($res['member_name']) ?> · <?= formatDate($res['reserved_date'],'d M') ?></div>
-                </div>
-                <form method="POST" action="<?= BASE_URL ?>/views/admin/reservations/index.php" style="display:flex;gap:4px;">
-                  <?= csrfField() ?>
-                  <input type="hidden" name="id" value="<?= $res['id'] ?>">
-                  <input type="hidden" name="action" value="approved">
-                  <button class="btn btn-sm btn-success" style="padding:4px 10px;">
-                    <i class="fas fa-check"></i>
-                  </button>
-                </form>
-              </div>
-              <?php endforeach; ?>
-            </div>
-          <?php endif; ?>
+          <div class="table-wrapper" style="border:none;border-radius:0;max-height:320px;overflow-y:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Reservation #</th>
+                  <th>Member</th>
+                  <th>Book</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($pendingReservations as $reservation): ?>
+                <tr>
+                  <td><span class="badge badge-warning"><?= e($reservation['reservation_number']) ?></span></td>
+                  <td><?= e($reservation['full_name']) ?></td>
+                  <td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="<?= e($reservation['title']) ?>"><?= e($reservation['title']) ?></td>
+                  <td><?= formatDate($reservation['reserved_date']) ?></td>
+                </tr>
+                <?php endforeach; ?>
+                <?php if (empty($pendingReservations)): ?>
+                <tr><td colspan="4" class="text-center text-muted" style="padding:24px;">No pending reservations</td></tr>
+                <?php endif; ?>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
+
+      <?php if (!empty($lowStockBooks)): ?>
+      <!-- Low Stock Alert -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <span><i class="fas fa-exclamation-circle" style="color:var(--warning);margin-right:8px;"></i>Low Stock Alert</span>
+          <a href="<?= BASE_URL ?>/views/librarian/books/index.php?filter=low_stock" class="btn btn-sm btn-warning">View All</a>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;">
+            <?php foreach ($lowStockBooks as $book): ?>
+            <div class="alert alert-warning" style="margin:0;padding:12px;">
+              <strong><?= e($book['title']) ?></strong><br>
+              <small>Available: <?= $book['available_quantity'] ?> / Total: <?= $book['quantity'] ?></small>
+            </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
 
     </div><!-- /page-content -->
   </div><!-- /main-content -->
 </div><!-- /wrapper -->
-
-<script>
-const days     = <?= json_encode(array_values($days)) ?>;
-const borrows  = <?= json_encode(array_values($borrowsByDay)) ?>;
-const returns  = <?= json_encode(array_values($returnsByDay)) ?>;
-
-new Chart(document.getElementById('weeklyChart'), {
-  type: 'bar',
-  data: {
-    labels: days,
-    datasets: [
-      {
-        label: 'Issued',
-        data: borrows,
-        backgroundColor: 'rgba(79,70,229,.75)',
-        borderRadius: 5,
-        borderSkipped: false,
-      },
-      {
-        label: 'Returned',
-        data: returns,
-        backgroundColor: 'rgba(16,185,129,.75)',
-        borderRadius: 5,
-        borderSkipped: false,
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'top', labels: { padding: 16, font: { size: 12 } } }
-    },
-    scales: {
-      y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,.05)' }, ticks: { stepSize: 1 } },
-      x: { grid: { display: false } }
-    }
-  }
-});
-</script>
 
 <?php include __DIR__ . '/../../includes/footer.php'; ?>

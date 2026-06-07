@@ -63,7 +63,7 @@ $pageTitle = 'Database Backup';
 ?>
 <?php include __DIR__ . '/../../../includes/header.php'; ?>
 <div class="wrapper">
-  <?php include __DIR__ . '/../../../includes/sidebar_admin.php'; ?>
+  <?php include __DIR__ . '/../../../includes/sidebar.php'; ?>
   <div class="main-content">
     <?php include __DIR__ . '/../../../includes/navbar.php'; ?>
     <div class="page-content">

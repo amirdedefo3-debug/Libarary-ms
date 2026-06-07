@@ -12,54 +12,55 @@
 
   <div class="sidebar-nav">
     <p class="nav-section-title">Main</p>
+    <?php $cp = $_SERVER['PHP_SELF'] ?? ''; ?>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/assistant/dashboard.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/assistant/dashboard.php" class="nav-link <?= strpos($cp,'assistant/dashboard') !== false ? 'active':'' ?>">
         <i class="fas fa-th-large"></i> Dashboard
       </a>
     </div>
 
     <p class="nav-section-title">Library</p>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/books/index.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/books/index.php" class="nav-link <?= strpos($cp,'books/index') !== false ? 'active':'' ?>">
         <i class="fas fa-book"></i> Books
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/books/create.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/books/create.php" class="nav-link <?= strpos($cp,'books/create') !== false ? 'active':'' ?>">
         <i class="fas fa-plus-circle"></i> Add Book
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/categories/index.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/categories/index.php" class="nav-link <?= strpos($cp,'categories') !== false ? 'active':'' ?>">
         <i class="fas fa-tags"></i> Categories
       </a>
     </div>
 
     <p class="nav-section-title">Circulation</p>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/transactions/issue.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/transactions/issue.php" class="nav-link <?= strpos($cp,'transactions/issue') !== false ? 'active':'' ?>">
         <i class="fas fa-arrow-circle-right"></i> Issue Book
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/transactions/return.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/transactions/return.php" class="nav-link <?= strpos($cp,'transactions/return') !== false ? 'active':'' ?>">
         <i class="fas fa-arrow-circle-left"></i> Return Book
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/transactions/index.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/transactions/index.php" class="nav-link <?= strpos($cp,'transactions/index') !== false ? 'active':'' ?>">
         <i class="fas fa-list"></i> Transactions
       </a>
     </div>
 
     <p class="nav-section-title">Members</p>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/members/index.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/members/index.php" class="nav-link <?= strpos($cp,'members/index') !== false ? 'active':'' ?>">
         <i class="fas fa-users"></i> Members
       </a>
     </div>
     <div class="nav-item">
-      <a href="<?= BASE_URL ?>/views/admin/members/create.php" class="nav-link">
+      <a href="<?= BASE_URL ?>/views/admin/members/create.php" class="nav-link <?= strpos($cp,'members/create') !== false ? 'active':'' ?>">
         <i class="fas fa-user-plus"></i> Add Member
       </a>
     </div>
